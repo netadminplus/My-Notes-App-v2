@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-app-v2
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notes-app-v2
+  template:
+    metadata:
+      labels:
+        app: notes-app-v2
+    spec:
+      containers:
+      - name: notes-app
+        # REPLACE 'YOUR_DOCKERHUB_USER' below with your actual username.
+        # This part is public, so it is safe to write here.
+        image: YOUR_DOCKERHUB_USER/notes-app:v2
+        ports:
+        - containerPort: 5000
+        env:
+        - name: DB_NAME
+          value: "notes_db"
+        # Database credentials are pulled from the K8s Cluster Secrets (Safe)
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: password
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-app-service
+spec:
+  selector:
+    app: notes-app-v2
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000
+  type: LoadBalancer
